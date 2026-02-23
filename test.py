@@ -1,5 +1,8 @@
 import json
 import base64
+
+from bs4 import BeautifulSoup
+
 from libzim.reader import Archive
 
 
@@ -43,7 +46,7 @@ def extract_zim_to_json(zim_path: str, output_json: str, max_objects: int = 40):
             "mime_type": item.mimetype,
             "is_redirect": entry.is_redirect,
             "namespace": namespace,
-            "content": content,
+            "content": get_main_content(content),
             "size_bytes": item.size
         })
         count += 1
@@ -170,6 +173,23 @@ def get_entry_type_and_namespace(entry_path):
 
     return entry_type, namespace
 
+def get_main_content(content):
+    """
+    Return the content from the <main> element in a string-encoded HTML
+    document::
+
+        >>> get_main_content('''
+        ... <html>
+        ...     <body>
+        ...         <ul><li>A</li></ul>
+        ...         <main><h1>Title</h1><p>Text</p></main>
+        ...     </body>
+        ... </html>''')
+        '<h1>Title</h1><p>Text</p>'
+    """
+    soup = BeautifulSoup(content, 'html.parser')
+    return soup.find('main').decode_contents()
+
 def to_skip(entry):
     """
     Decides if a specific entry should be
@@ -218,8 +238,6 @@ def to_skip(entry):
         return True
 
     return False
-
-from bs4 import BeautifulSoup
 
 def is_redirect_by_meta_tag(html_content):
     """
