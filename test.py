@@ -9,8 +9,11 @@ def extract_zim_to_json(zim_path: str, output_json: str, max_objects: int = 40):
     results = []
     total = zim.entry_count
     limit = min(max_objects, total)
+    entry_id = 0
+    count = 0
 
-    for entry_id in range(limit):
+    while count < limit:
+        entry_id += 1
         try:
             entry = zim._get_entry_by_id(entry_id)
             item = entry.get_item()
@@ -38,10 +41,12 @@ def extract_zim_to_json(zim_path: str, output_json: str, max_objects: int = 40):
             "title": entry.title,
             "type": entry_type,
             "mime_type": item.mimetype,
+            "is_redirect": entry.is_redirect,
             "namespace": namespace,
             "content": content,
             "size_bytes": item.size
         })
+        count += 1
 
     with open(output_json, "w", encoding="utf-8") as f:
         json.dump(results, f, indent=2, ensure_ascii=False)
