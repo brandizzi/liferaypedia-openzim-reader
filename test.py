@@ -30,52 +30,7 @@ def extract_zim_to_json(zim_path: str, output_json: str, max_objects: int = 40):
 
         entry_path = entry.path
 
-        namespace = "main"  # default
-        if entry_path.startswith('-/') or entry_path.startswith('/'):
-            namespace = "main"
-        elif '/' in entry_path:
-            namespace_part = entry_path.split('/')[0]
-            if namespace_part and namespace_part != '-':
-                namespace = namespace_part
-
-        # Determine type based on namespace and other indicators
-        entry_type = "unknown"
-        if namespace == "main":
-            entry_type = "page"
-        elif namespace == "A":
-            entry_type = "article"
-        elif namespace == "I":
-            entry_type = "image"
-        elif namespace == "Category":
-            entry_type = "category"
-        elif namespace == "Discussion":
-            entry_type = "discussion"
-        elif namespace == "File":
-            entry_type = "file"
-        elif namespace == "Template":
-            entry_type = "template"
-        elif namespace == "Help":
-            entry_type = "help"
-        elif namespace == "Portal":
-            entry_type = "portal"
-        elif namespace == "Book":
-            entry_type = "book"
-        elif namespace == "MediaWiki":
-            entry_type = "mediawiki"
-
-        # Additional type detection based on file extension
-        if '.' in entry_path:
-            extension = entry_path.split('.')[-1].lower()
-            if extension in ['jpg', 'jpeg', 'png', 'gif', 'svg', 'webp']:
-                entry_type = "image"
-            elif extension in ['pdf', 'doc', 'docx', 'txt', 'rtf']:
-                entry_type = "document"
-            elif extension in ['mp3', 'wav', 'ogg', 'flac', 'aac']:
-                entry_type = "audio"
-            elif extension in ['mp4', 'avi', 'mov', 'wmv', 'flv']:
-                entry_type = "video"
-            elif extension in ['zip', 'rar', '7z', 'tar', 'gz']:
-                entry_type = "archive"
+        entry_type, namespace = get_entry_type_and_namespace(entry_path)
 
         results.append({
             "id": entry_id,
@@ -95,11 +50,125 @@ def extract_zim_to_json(zim_path: str, output_json: str, max_objects: int = 40):
     print(f"Namespaces found: {set(item['namespace'] for item in results)}")
     print(f"Types found: {set(item['type'] for item in results)}")
 
+def deduce_namespace(entry_path):
+    """
+    Given the path to the entry, deduce the namespace_part
+
+    OpenZIM paths typically follow patterns like:
+    - A/Article for articles
+    - I/Image for images
+    - -/ for main namespace
+    - / for main namespace
+        entry_path = entry.path
+
+    In it, the namespace typically the first character before '/'::
+
+    >>> deduce_namespace('I/cat.png')
+    'I'
+
+    When there is no such character before '/' or it is '-', then it is in the
+    main namespace::
+
+    >>> deduce_namespace('-/Main_Page')
+    'main'
+    >>> deduce_namespace('/Entry')
+    'main'
+
+    This function returns 'main' by default anyway:
+
+    >>> deduce_namespace('lostmedia')
+    'main'
+    """
+    namespace = "main"
+
+    if entry_path.startswith('-/') or entry_path.startswith('/'):
+        namespace = "main"
+    elif '/' in entry_path:
+        namespace_part = entry_path.split('/')[0]
+        if namespace_part and namespace_part != '-':
+            namespace = namespace_part
+
+    return namespace
+
+def get_entry_type_and_namespace(entry_path):
+    """
+    Given a path to an entry, this function returns both the entry type and
+    the namespace.
+
+    For the most common page-like entries, it will define the entry type from
+    the namespace::
+
+    >>> get_entry_type_and_namespace('-/Main_Page')
+    ('page', 'main')
+    >>> get_entry_type_and_namespace('A/Bobsled')
+    ('article', 'A')
+    >>> get_entry_type_and_namespace('humanities.jpg')
+    ('page', 'main')
+    >>> get_entry_type_and_namespace('-/Main_Page')
+    ('page', 'main')
+    >>> get_entry_type_and_namespace('I/cat.png')
+    ('image', 'I')
+    >>> get_entry_type_and_namespace('I/cat.mp4')
+    ('image', 'I')
+
+
+    If the namespace is File, then we check to see the kind of file from
+    the extension:
+
+    >>> get_entry_type_and_namespace('File/cat.png')
+    ('image', 'File')
+    >>> get_entry_type_and_namespace('File/novel.pdf')
+    ('document', 'File')
+    >>> get_entry_type_and_namespace('File/jazz.ogg')
+    ('audio', 'File')
+
+    """
+    namespace = deduce_namespace(entry_path)
+
+    entry_type = "unknown"
+    if namespace == "main":
+        entry_type = "page"
+    elif namespace == "A":
+        entry_type = "article"
+    elif namespace == "I":
+        entry_type = "image"
+    elif namespace == "Category":
+        entry_type = "category"
+    elif namespace == "Discussion":
+        entry_type = "discussion"
+    elif namespace == "File":
+        entry_type = "file"
+    elif namespace == "Template":
+        entry_type = "template"
+    elif namespace == "Help":
+        entry_type = "help"
+    elif namespace == "Portal":
+        entry_type = "portal"
+    elif namespace == "Book":
+        entry_type = "book"
+    elif namespace == "MediaWiki":
+        entry_type = "mediawiki"
+
+    # Additional type detection based on file extension
+    if namespace == 'File':
+        extension = entry_path.split('.')[-1].lower()
+        if extension in ['jpg', 'jpeg', 'png', 'gif', 'svg', 'webp']:
+            entry_type = "image"
+        elif extension in ['pdf', 'doc', 'docx', 'txt', 'rtf']:
+            entry_type = "document"
+        elif extension in ['mp3', 'wav', 'ogg', 'flac', 'aac']:
+            entry_type = "audio"
+        elif extension in ['mp4', 'avi', 'mov', 'wmv', 'flv']:
+            entry_type = "video"
+        elif extension in ['zip', 'rar', '7z', 'tar', 'gz']:
+            entry_type = "archive"
+
+    return entry_type, namespace
 
 if __name__ == "__main__":
     import sys
     if len(sys.argv) != 3:
         print("Usage: python zim_to_json.py <input.zim> <output.json>")
         sys.exit(1)
-
+    
     extract_zim_to_json(sys.argv[1], sys.argv[2], max_objects=40)
