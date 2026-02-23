@@ -18,10 +18,10 @@ def extract_zim_to_json(zim_path: str, output_json: str, max_objects: int = 40):
             print(f'Skipping entry {entry_id} due to error: {e}')
             continue
 
-        raw_content = bytes(item.content)
-
-        if item.mimetype == "application/json":
+        if to_skip(entry):
             continue
+
+        raw_content = bytes(item.content)
 
         if item.mimetype.startswith("text"):
             content = raw_content.decode("utf-8", errors="replace")
@@ -165,10 +165,48 @@ def get_entry_type_and_namespace(entry_path):
 
     return entry_type, namespace
 
+def to_skip(entry):
+    """
+    Decides if a specific entry should be
+    skipped. We skip the following of entries right now:
+
+    - JavaScript files::
+
+        >>> class TestItem:
+        ...     def __init__(self, mimetype='text/html'):
+        ...         self.mimetype = mimetype
+        >>> class TestEntry:
+        ...     def __init__(self, is_redirect=False, mime_type='text/html'):
+        ...         self.is_redirect = is_redirect
+        ...         self.item = TestItem(mime_type)
+        ...     def get_item(self):
+        ...         return self.item
+        >>> to_skip(TestEntry(mime_type='application/javascript'))
+        True
+
+    - Redirects::
+        >>> to_skip(TestEntry(is_redirect=True, mime_type='text/html'))
+        True
+
+    In all other cases, it should return False::
+
+    >>> to_skip(TestEntry(is_redirect=False, mime_type='text/html'))
+    False
+    """
+    item = entry.get_item()
+    if entry.is_redirect:
+        return True
+
+
+    if item.mimetype == 'application/javascript':
+        return True
+
+    return False
+
 if __name__ == "__main__":
     import sys
     if len(sys.argv) != 3:
         print("Usage: python zim_to_json.py <input.zim> <output.json>")
         sys.exit(1)
-    
+
     extract_zim_to_json(sys.argv[1], sys.argv[2], max_objects=40)
