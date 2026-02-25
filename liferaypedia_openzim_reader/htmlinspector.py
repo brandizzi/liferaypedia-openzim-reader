@@ -1,0 +1,78 @@
+# liferaypedia_openzim_reader/html_parser.py
+"""
+HTML parsing functions for the LiferayPedia OpenZIM Reader package.
+
+This module contains functions for parsing HTML content, extracting main content,
+and detecting redirect meta tags.
+"""
+
+from bs4 import BeautifulSoup
+
+def get_main_content(content):
+    """
+    Return the content from the <main> element in a string-encoded HTML
+    document::
+
+    >>> get_main_content('''
+    ... <html>
+    ...     <body>
+    ...         <ul><li>A</li></ul>
+    ...         <main><h1>Title</h1><p>Text</p></main>
+    ...     </body>
+    ... </html>
+    ... ''')
+    '<h1>Title</h1><p>Text</p>'
+    """
+    soup = BeautifulSoup(content, 'html.parser')
+    return soup.find('main').decode_contents()
+
+
+def is_redirect_by_meta_tag(html_content):
+    """
+    Check if an HTML document contains a meta tag that causes page to refresh::
+
+    >>> is_redirect_by_meta_tag('''
+    ... <!DOCTYPE html><html><head><meta http-equiv="refresh" content="5"></head></html>
+    ... ''')
+    True
+
+    It should be case-insensitive::
+
+    >>> is_redirect_by_meta_tag('''
+    ... <html>head><meta HTTP-EQUIV="REFRESH" content="5"></head></html>
+    ... ''')
+    True
+
+    Of course, it should return false if there is no meta tag, or if there are
+    meta tags that do not refresh, or if there is no content on it::
+
+    >>> is_redirect_by_meta_tag('''
+    ... <html><head><title>Test</title></head></html>
+    ... ''')
+    False
+    >>> is_redirect_by_meta_tag('''
+    ... html><head<><meta charset="UTF-8"><title>Test</title></head></html>
+    ... ''')
+    False
+    >>> is_redirect_by_meta_tag('''
+    ... <html><head><meta http-equiv="refresh"></head></html>
+    ... ''')
+    False
+    >>> empty_html = ''
+    >>> is_redirect_by_meta_tag(empty_html)
+    False
+    """
+    soup = BeautifulSoup(html_content, 'html.parser')
+
+    head = soup.find('head')
+    meta_tags = soup.find_all('meta')
+
+    for meta in meta_tags:
+        http_equiv = meta.get('http-equiv', '').lower()
+        if http_equiv == 'refresh':
+            # Check if content attribute exists (required for refresh)
+            content = meta.get('content', '')
+            if content:
+                return True
+
+    return False

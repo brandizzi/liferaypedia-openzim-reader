@@ -1,12 +1,27 @@
-import json
-import base64
+#!/usr bin env python
+"""
+General OpenZIM parsing functions for the LiferayPedia OpenZIM Reader package.
 
-from bs4 import BeautifulSoup
+This module contains functions for parsing OpenZIM files, extracting entries,
+and determining entry types and namespaces.
+"""
+
+import base64
+import json
 
 from libzim.reader import Archive
 
+from .htmlinspector import is_redirect_by_meta_tag, get_main_content
 
 def extract_zim_to_json(zim_path: str, output_json: str, max_objects: int = 40):
+    """
+    Extract entries from a ZIM file to JSON format.
+    
+    Args:
+        zim_path: Path to the input ZIM file
+        output_json: Path to the output JSON file
+        max_objects: Maximum number of objects to extract (default: 40)
+    """
     zim = Archive(zim_path)
 
     results = []
@@ -21,10 +36,11 @@ def extract_zim_to_json(zim_path: str, output_json: str, max_objects: int = 40):
             entry = zim._get_entry_by_id(entry_id)
             item = entry.get_item()
         except Exception as e:
-            print(f'Skipping entry {entry_id} due to error: {e}')
+            print(f'skipping entry {entry_id}: {e}')
             continue
 
         if to_skip(entry):
+            print(f'skipping {item.title}')
             continue
 
         raw_content = bytes(item.content)
@@ -34,6 +50,11 @@ def extract_zim_to_json(zim_path: str, output_json: str, max_objects: int = 40):
         else:
             content = base64.b64encode(raw_content).decode("ascii")
 
+        if is_redirect_by_meta_tag(content):
+            print(f'skipping {item.title}')
+            continue
+
+        print(f'got {item.title}')
         entry_path = entry.path
 
         entry_type, namespace = get_entry_type_and_namespace(entry_path)
@@ -46,7 +67,7 @@ def extract_zim_to_json(zim_path: str, output_json: str, max_objects: int = 40):
             "mime_type": item.mimetype,
             "is_redirect": entry.is_redirect,
             "namespace": namespace,
-            "content": get_main_content(content),
+            "content": (content),
             "size_bytes": item.size
         })
         count += 1
@@ -67,15 +88,14 @@ def deduce_namespace(entry_path):
     - I/Image for images
     - -/ for main namespace
     - / for main namespace
-        entry_path = entry.path
 
-    In it, the namespace typically the first character before '/'::
+    In it, the namespace typically the first character before '/':
 
     >>> deduce_namespace('I/cat.png')
     'I'
 
     When there is no such character before '/' or it is '-', then it is in the
-    main namespace::
+    main namespace:
 
     >>> deduce_namespace('-/Main_Page')
     'main'
@@ -97,6 +117,7 @@ def deduce_namespace(entry_path):
             namespace = namespace_part
 
     return namespace
+
 
 def get_entry_type_and_namespace(entry_path):
     """
@@ -173,22 +194,6 @@ def get_entry_type_and_namespace(entry_path):
 
     return entry_type, namespace
 
-def get_main_content(content):
-    """
-    Return the content from the <main> element in a string-encoded HTML
-    document::
-
-        >>> get_main_content('''
-        ... <html>
-        ...     <body>
-        ...         <ul><li>A</li></ul>
-        ...         <main><h1>Title</h1><p>Text</p></main>
-        ...     </body>
-        ... </html>''')
-        '<h1>Title</h1><p>Text</p>'
-    """
-    soup = BeautifulSoup(content, 'html.parser')
-    return soup.find('main').decode_contents()
 
 def to_skip(entry):
     """
@@ -198,13 +203,12 @@ def to_skip(entry):
     - JavaScript files::
 
         >>> class TestItem:
-        ...     def __init__(self, mimetype='text/html', content='hello'):
+        ...     def __init__(self, mimetype='text/html'):
         ...         self.mimetype = mimetype
-        ...         self.content = content
         >>> class TestEntry:
-        ...     def __init__(self, is_redirect=False, mime_type='text/html', content='hello'):
+        ...     def __init__(self, is_redirect=False, mime_type='text/html'):
         ...         self.is_redirect = is_redirect
-        ...         self.item = TestItem(mime_type, content)
+        ...         self.item = TestItem(mime_type)
         ...     def get_item(self):
         ...         return self.item
         >>> to_skip(TestEntry(mime_type='application/javascript'))
@@ -214,12 +218,10 @@ def to_skip(entry):
         >>> to_skip(TestEntry(is_redirect=True, mime_type='text/html'))
         True
 
-        - When a redirect points to a section of another page, instead of the
-          page, it is not marked as redirect. So we have to check their
-          meta tags for redirect pragmas:
-
-            >>> to_skip(TestEntry(content='<head><meta http-equiv="refresh" content="5"></head>'))
-            True
+    **NOTE**: When a redirect points to a section of another page, instead of
+    the page, it is not marked as redirect. So we have to check their  meta tags
+    for redirect pragmas. This is *not* done in this function, but later, when
+    we already have the parsed content to examine, for performance reasons.
 
     In all other cases, it should return False::
 
@@ -230,71 +232,7 @@ def to_skip(entry):
     if entry.is_redirect:
         return True
 
-
     if item.mimetype == 'application/javascript':
         return True
 
-    if is_redirect_by_meta_tag(item.content):
-        return True
-
     return False
-
-def is_redirect_by_meta_tag(html_content):
-    """
-    Check if an HTML document contains a meta tag that causes page to refresh::
-
-    >>> is_redirect_by_meta_tag('''
-    ... <!DOCTYPE html><html><head><meta http-equiv="refresh" content="5"></head></html>
-    ... ''')
-    True
-
-    It should be case-insensitive::
-
-    >>> is_redirect_by_meta_tag('''
-    ... <html><head><meta HTTP-EQUIV="REFRESH" content="5"></head></html>
-    ... ''')
-    True
-
-    Of course, it should return false if there is no meta tag, or if there are
-    meta tags that do not refresh, or if there is no content on it::
-
-    >>> is_redirect_by_meta_tag('''
-    ... <html><head><title>Test</title></head></html>
-    ... ''')
-    False
-    >>> is_redirect_by_meta_tag('''
-    ... <html><head><meta charset="UTF-8"><title>Test</title></head></html>
-    ... ''')
-    False
-    >>> is_redirect_by_meta_tag('''
-    ... <html><head><meta http-equiv="refresh"></head></html>
-    ... ''')
-    False
-    >>> empty_html = ''
-    >>> is_redirect_by_meta_tag(empty_html)
-    False
-    """
-    soup = BeautifulSoup(html_content, 'html.parser')
-
-    head = soup.find('head')
-    meta_tags = soup.find_all('meta')
-
-    for meta in meta_tags:
-        http_equiv = meta.get('http-equiv', '').lower()
-        if http_equiv == 'refresh':
-            # Check if content attribute exists (required for refresh)
-            content = meta.get('content', '')
-            if content:
-                return True
-
-    return False
-
-
-
-if __name__ == "__main__":
-    import sys
-    if len(sys.argv) != 3:
-        print("Usage: python zim_to_json.py <input.zim> <output.json>")
-        sys.exit(1)
-
-    extract_zim_to_json(sys.argv[1], sys.argv[2], max_objects=40)
