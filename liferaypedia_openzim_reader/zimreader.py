@@ -11,7 +11,7 @@ import json
 
 from libzim.reader import Archive
 
-from .htmlinspector import is_redirect_by_meta_tag, get_main_content
+from liferaypedia_openzim_reader.htmlinspector import is_redirect_by_meta_tag, get_main_content
 
 def extract_zim_to_json(zim_path: str, output_json: str, max_objects: int = 40):
     """
