@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from unittest import TestLoader
 from setuptools import setup, find_packages
 
 setup(
@@ -11,6 +12,4 @@ setup(
     url='https://github.com/brandizzi/liferaypedia-openzim-reader',
 
     packages=find_packages(),
-    test_suite='liferaypedia-openzim-reader.tests',
-    test_loader='unittest:TestLoader',
 )

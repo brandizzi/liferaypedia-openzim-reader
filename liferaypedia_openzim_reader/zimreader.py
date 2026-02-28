@@ -44,18 +44,8 @@ def iter_zim_entries(zim_path: str, max_objects: int = 40):
         ...     'image_paths': ['I/sample.png'],
         ... }
         True
-        >>> entries[1] == {
-        ...     'id': 2,
-        ...     'path': 'Category/Sample_Category',
-        ...     'title': 'Sample Category',
-        ...     'type': 'category',
-        ...     'mime_type': 'text/html',
-        ...     'is_redirect': False,
-        ...     'namespace': 'Category',
-        ...     'content': '<h1>Category: Sample Category</h1>\\n<ul>\\n<li><a href=\"/A/Sample_Article\">Sample Article</a></li>\\n</ul>',
-        ...     'size_bytes': 240,
-        ... }
-        True
+        >>> entries[1]
+        {'id': 2, 'path': 'Category/Sample_Category', 'title': 'Sample Category', 'type': 'category', 'mime_type': 'text/html', 'is_redirect': False, 'namespace': 'Category', 'content': '<h1>Category: Sample Category</h1>\\n<ul>\\n<li><a href=\"/A/Sample_Article\">Sample Article</a></li>\\n</ul>', 'size_bytes': 240, 'category_paths': [], 'image_paths': []}
         >>> entries[2] == {
         ...     'id': 3,
         ...     'path': 'I/sample.png',

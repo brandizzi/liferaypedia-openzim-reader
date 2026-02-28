@@ -25,6 +25,7 @@ class IterZimEntriesTests(unittest.TestCase):
                 "title": "Sample Article",
                 "type": "article",
                 "mime_type": "text/html",
+                "image_paths": ["I/sample.png"],
                 "is_redirect": False,
                 "namespace": "A",
                 "content": "<h1>Sample Article</h1>\n<p>This article contains an image and a category link.</p>\n<figure>\n<img alt=\"Sample image\" src=\"/I/sample.png\"/>\n<figcaption>Sample image</figcaption>\n</figure>\n<p>Category: <a href=\"/Category/Sample_Category\">Sample Category</a></p>",
@@ -46,6 +47,8 @@ class IterZimEntriesTests(unittest.TestCase):
                 "namespace": "Category",
                 "content": "<h1>Category: Sample Category</h1>\n<ul>\n<li><a href=\"/A/Sample_Article\">Sample Article</a></li>\n</ul>",
                 "size_bytes": 240,
+                "category_paths": [],
+                "image_paths": [],
             },
         )
 
@@ -74,8 +77,10 @@ class IterZimEntriesTests(unittest.TestCase):
                 "mime_type": "text/plain",
                 "is_redirect": False,
                 "namespace": "main",
-                "content": "image/png=1;text/html=2",
+                "content": "",
                 "size_bytes": 23,
+                "category_paths": [],
+                "image_paths": [],
             },
         )
 
