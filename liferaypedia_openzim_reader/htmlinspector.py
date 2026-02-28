@@ -78,3 +78,38 @@ def is_redirect_by_meta_tag(html_content):
                 return True
 
     return False
+
+
+def extract_category_and_image_paths(html_content: str) -> tuple[list[str], list[str]]:
+    """
+    Extract category and image paths from HTML content.
+
+    Returns (category_paths, image_paths) where each path is in ZIM format
+    (e.g. "Category/Name", "I/filename.png"). Only for use with article content.
+
+    >>> html = '<p><a href="/Category/Sample_Cat">Cat</a><img src="/I/pic.png"/></p>'
+    >>> extract_category_and_image_paths(html)
+    (['Category/Sample_Cat'], ['I/pic.png'])
+    """
+    soup = BeautifulSoup(html_content, 'html.parser')
+    category_paths = []
+    image_paths = []
+
+    for a in soup.find_all('a', href=True):
+        href = a['href'].strip()
+        if href.startswith('/'):
+            href = href[1:]
+        if href.startswith('Category/'):
+            path = href.split('#')[0].split('?')[0]
+            if path and path not in category_paths:
+                category_paths.append(path)
+
+    for img in soup.find_all('img', src=True):
+        src = img['src'].strip()
+        if src.startswith('/'):
+            src = src[1:]
+        path = src.split('#')[0].split('?')[0]
+        if path and path not in image_paths:
+            image_paths.append(path)
+
+    return category_paths, image_paths

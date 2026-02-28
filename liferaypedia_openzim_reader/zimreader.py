@@ -11,7 +11,11 @@ import json
 
 from libzim.reader import Archive
 
-from liferaypedia_openzim_reader.htmlinspector import is_redirect_by_meta_tag, get_main_content
+from liferaypedia_openzim_reader.htmlinspector import (
+    extract_category_and_image_paths,
+    get_main_content,
+    is_redirect_by_meta_tag,
+)
 
 
 def iter_zim_entries(zim_path: str, max_objects: int = 40):
@@ -39,6 +43,8 @@ def iter_zim_entries(zim_path: str, max_objects: int = 40):
         ...     'namespace': 'A',
         ...     'content': '<h1>Sample Article</h1>\\n<p>This article contains an image and a category link.</p>\\n<figure>\\n<img alt=\"Sample image\" src=\"/I/sample.png\"/>\\n<figcaption>Sample image</figcaption>\\n</figure>\\n<p>Category: <a href=\"/Category/Sample_Category\">Sample Category</a></p>',
         ...     'size_bytes': 399,
+        ...     'category_paths': ['Category/Sample_Category'],
+        ...     'image_paths': ['I/sample.png'],
         ... }
         True
         >>> entries[1] == {
@@ -104,7 +110,7 @@ def iter_zim_entries(zim_path: str, max_objects: int = 40):
         if entry_type in {'article', 'category'}:
             content = get_main_content(content)
 
-        yield {
+        result = {
             "id": entry_id,
             "path": entry.path,
             "title": entry.title,
@@ -115,6 +121,11 @@ def iter_zim_entries(zim_path: str, max_objects: int = 40):
             "content": content,
             "size_bytes": item.size,
         }
+        if entry_type == "article":
+            category_paths, image_paths = extract_category_and_image_paths(content)
+            result["category_paths"] = category_paths
+            result["image_paths"] = image_paths
+        yield result
         count += 1
 
 
