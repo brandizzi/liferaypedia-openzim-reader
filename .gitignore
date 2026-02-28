@@ -1,0 +1,5 @@
+__pycache__/
+liferaypedia_openzim_reader/__pycache__/
+liferaypedia_openzim_reader/tests/__pycache__/
+liferaypedia_openzim_reader/tests/resources
+*.json
