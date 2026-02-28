@@ -29,6 +29,8 @@ class IterZimEntriesTests(unittest.TestCase):
                 "namespace": "A",
                 "content": "<h1>Sample Article</h1>\n<p>This article contains an image and a category link.</p>\n<figure>\n<img alt=\"Sample image\" src=\"/I/sample.png\"/>\n<figcaption>Sample image</figcaption>\n</figure>\n<p>Category: <a href=\"/Category/Sample_Category\">Sample Category</a></p>",
                 "size_bytes": 399,
+                "category_paths": ["Category/Sample_Category"],
+                "image_paths": ["I/sample.png"],
             },
         )
 
