@@ -11,7 +11,7 @@ from bs4 import BeautifulSoup
 def get_main_content(content):
     """
     Return the content from the <main> element in a string-encoded HTML
-    document::
+    document. content may be str or a BeautifulSoup instance::
 
     >>> get_main_content('''
     ... <html>
@@ -25,13 +25,15 @@ def get_main_content(content):
     ... ''')
     '<h1>Title</h1><p>Text</p>'
     """
-    soup = BeautifulSoup(content, 'html.parser')
-    return soup.find('main').decode_contents().strip()
+    soup = content if isinstance(content, BeautifulSoup) else BeautifulSoup(content, 'html.parser')
+    main = soup.find('main')
+    return main.decode_contents().strip() if main else ''
 
 
-def is_redirect_by_meta_tag(html_content):
+def is_redirect_by_meta_tag(content):
     """
-    Check if an HTML document contains a meta tag that causes page to refresh::
+    Check if an HTML document contains a meta tag that causes page to refresh.
+    content may be str or a BeautifulSoup instance::
 
     >>> is_redirect_by_meta_tag('''
     ... <!DOCTYPE html><html><head><meta http-equiv="refresh" content="5"></head></html>
@@ -64,7 +66,7 @@ def is_redirect_by_meta_tag(html_content):
     >>> is_redirect_by_meta_tag(empty_html)
     False
     """
-    soup = BeautifulSoup(html_content, 'html.parser')
+    soup = content if isinstance(content, BeautifulSoup) else BeautifulSoup(content, 'html.parser')
 
     head = soup.find('head')
     meta_tags = soup.find_all('meta')
@@ -80,22 +82,23 @@ def is_redirect_by_meta_tag(html_content):
     return False
 
 
-def extract_category_and_image_paths(html_content: str) -> tuple[list[str], list[str]]:
+def extract_category_and_image_paths(content) -> tuple[list[str], list[str]]:
     """
     Extract category and image paths from HTML content.
 
     Returns (category_paths, image_paths) where each path is in ZIM format
     (e.g. "Category/Name", "I/filename.png"). Only for use with article content.
+    content may be str or a BeautifulSoup instance (or Tag)::
 
     >>> html = '<p><a href="/Category/Sample_Cat">Cat</a><img src="/I/pic.png"/></p>'
     >>> extract_category_and_image_paths(html)
     (['Category/Sample_Cat'], ['I/pic.png'])
     """
-    soup = BeautifulSoup(html_content, 'html.parser')
+    root = content if not isinstance(content, str) else BeautifulSoup(content, 'html.parser')
     category_paths = []
     image_paths = []
 
-    for a in soup.find_all('a', href=True):
+    for a in root.find_all('a', href=True):
         href = a['href'].strip()
         if href.startswith('/'):
             href = href[1:]
@@ -104,7 +107,7 @@ def extract_category_and_image_paths(html_content: str) -> tuple[list[str], list
             if path and path not in category_paths:
                 category_paths.append(path)
 
-    for img in soup.find_all('img', src=True):
+    for img in root.find_all('img', src=True):
         src = img['src'].strip()
         if src.startswith('/'):
             src = src[1:]
