@@ -12,11 +12,7 @@ import json
 from bs4 import BeautifulSoup
 from libzim.reader import Archive
 
-from liferaypedia_openzim_reader.htmlinspector import (
-    extract_category_and_image_paths,
-    get_main_content,
-    is_redirect_by_meta_tag,
-)
+from liferaypedia_openzim_reader.htmlinspector import HtmlInspector
 
 
 def iter_zim_entries(zim_path: str, max_objects: int = 40):
@@ -97,12 +93,11 @@ def iter_zim_entries(zim_path: str, max_objects: int = 40):
 
         if item.mimetype.startswith("text"):
             content = raw_content.decode("utf-8", errors="replace")
-            parsed = BeautifulSoup(content, 'html.parser')
         else:
             content = base64.b64encode(raw_content).decode("ascii")
-            parsed = content
 
-        if is_redirect_by_meta_tag(parsed):
+        inspector = HtmlInspector(content)
+        if inspector.is_redirect_by_meta_tag():
             print(f'skipping {item.title}')
             continue
 
@@ -111,7 +106,7 @@ def iter_zim_entries(zim_path: str, max_objects: int = 40):
         entry_type, namespace = get_entry_type_and_namespace(entry_path)
 
         if entry_type in {'article', 'category'}:
-            content = get_main_content(parsed)
+            content = inspector.get_main_content()
 
         result = {
             "id": entry_id,
@@ -124,12 +119,8 @@ def iter_zim_entries(zim_path: str, max_objects: int = 40):
             "content": content,
             "size_bytes": item.size,
         }
-        if entry_type == "article" and isinstance(parsed, BeautifulSoup):
-            main_elem = parsed.find('main')
-            category_paths, image_paths = (
-                extract_category_and_image_paths(main_elem)
-                if main_elem else ([], [])
-            )
+        if entry_type == "article":
+            category_paths, image_paths =  inspector.extract_category_and_image_paths()
             result["category_paths"] = category_paths
             result["image_paths"] = image_paths
         yield result
