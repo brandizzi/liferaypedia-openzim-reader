@@ -105,7 +105,7 @@ def iter_zim_entries(zim_path: str, max_objects: int = 40):
 
         entry_type, namespace = get_entry_type_and_namespace(entry_path)
 
-        if entry_type in {'article', 'category'}:
+        if entry_type in {'article', 'category', 'page'}:
             content = inspector.get_main_content()
 
         result = {
@@ -119,7 +119,7 @@ def iter_zim_entries(zim_path: str, max_objects: int = 40):
             "content": content,
             "size_bytes": item.size,
         }
-        if entry_type == "article":
+        if entry_type in {"article", "category", "page"}:
             category_paths, image_paths =  inspector.extract_category_and_image_paths()
             result["category_paths"] = category_paths
             result["image_paths"] = image_paths
