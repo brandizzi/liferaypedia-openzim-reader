@@ -13,18 +13,18 @@ from libzim.reader import Archive
 
 from liferaypedia_openzim_reader.htmlinspector import is_redirect_by_meta_tag, get_main_content
 
-def extract_zim_to_json(zim_path: str, output_json: str, max_objects: int = 40):
+
+def iter_zim_entries(zim_path: str, max_objects: int = 40):
     """
-    Extract entries from a ZIM file to JSON format.
-    
+    Iterate over entries from a ZIM file, yielding dicts with the same
+    structure used by ``extract_zim_to_json``.
+
     Args:
         zim_path: Path to the input ZIM file
-        output_json: Path to the output JSON file
         max_objects: Maximum number of objects to extract (default: 40)
     """
     zim = Archive(zim_path)
 
-    results = []
     total = zim.entry_count
     limit = min(max_objects, total)
     entry_id = 0
@@ -62,7 +62,7 @@ def extract_zim_to_json(zim_path: str, output_json: str, max_objects: int = 40):
         if entry_type in {'article', 'category'}:
             content = get_main_content(content)
 
-        results.append({
+        yield {
             "id": entry_id,
             "path": entry.path,
             "title": entry.title,
@@ -72,8 +72,20 @@ def extract_zim_to_json(zim_path: str, output_json: str, max_objects: int = 40):
             "namespace": namespace,
             "content": content,
             "size_bytes": item.size,
-        })
+        }
         count += 1
+
+
+def extract_zim_to_json(zim_path: str, output_json: str, max_objects: int = 40):
+    """
+    Extract entries from a ZIM file to JSON format.
+
+    Args:
+        zim_path: Path to the input ZIM file
+        output_json: Path to the output JSON file
+        max_objects: Maximum number of objects to extract (default: 40)
+    """
+    results = list(iter_zim_entries(zim_path, max_objects=max_objects))
 
     with open(output_json, "w", encoding="utf-8") as f:
         json.dump(results, f, indent=2, ensure_ascii=False)
