@@ -59,6 +59,9 @@ def extract_zim_to_json(zim_path: str, output_json: str, max_objects: int = 40):
 
         entry_type, namespace = get_entry_type_and_namespace(entry_path)
 
+        if entry_type in {'article', 'category'}:
+            content = get_main_content(content)
+
         results.append({
             "id": entry_id,
             "path": entry.path,
@@ -67,8 +70,8 @@ def extract_zim_to_json(zim_path: str, output_json: str, max_objects: int = 40):
             "mime_type": item.mimetype,
             "is_redirect": entry.is_redirect,
             "namespace": namespace,
-            "content": (content),
-            "size_bytes": item.size
+            "content": content,
+            "size_bytes": item.size,
         })
         count += 1
 
