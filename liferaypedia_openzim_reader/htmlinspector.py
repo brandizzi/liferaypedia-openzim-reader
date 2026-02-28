@@ -17,14 +17,16 @@ def get_main_content(content):
     ... <html>
     ...     <body>
     ...         <ul><li>A</li></ul>
-    ...         <main><h1>Title</h1><p>Text</p></main>
+    ...         <main>
+    ...             <h1>Title</h1><p>Text</p>
+    ...         </main>
     ...     </body>
     ... </html>
     ... ''')
     '<h1>Title</h1><p>Text</p>'
     """
     soup = BeautifulSoup(content, 'html.parser')
-    return soup.find('main').decode_contents()
+    return soup.find('main').decode_contents().strip()
 
 
 def is_redirect_by_meta_tag(html_content):

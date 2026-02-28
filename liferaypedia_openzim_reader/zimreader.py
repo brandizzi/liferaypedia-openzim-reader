@@ -22,6 +22,49 @@ def iter_zim_entries(zim_path: str, max_objects: int = 40):
     Args:
         zim_path: Path to the input ZIM file
         max_objects: Maximum number of objects to extract (default: 40)
+
+    Basic usage with a small test archive::
+
+        >>> from pathlib import Path
+        >>> pkg_dir = Path(__file__).resolve().parent
+        >>> test_zim = pkg_dir / 'tests' / 'resources' / 'test.zim'
+        >>> entries = list(iter_zim_entries(str(test_zim), max_objects=4))
+        >>> entries[0] == {
+        ...     'id': 1,
+        ...     'path': 'A/Sample_Article',
+        ...     'title': 'Sample Article',
+        ...     'type': 'article',
+        ...     'mime_type': 'text/html',
+        ...     'is_redirect': False,
+        ...     'namespace': 'A',
+        ...     'content': '<h1>Sample Article</h1>\\n<p>This article contains an image and a category link.</p>\\n<figure>\\n<img alt=\"Sample image\" src=\"/I/sample.png\"/>\\n<figcaption>Sample image</figcaption>\\n</figure>\\n<p>Category: <a href=\"/Category/Sample_Category\">Sample Category</a></p>',
+        ...     'size_bytes': 399,
+        ... }
+        True
+        >>> entries[1] == {
+        ...     'id': 2,
+        ...     'path': 'Category/Sample_Category',
+        ...     'title': 'Sample Category',
+        ...     'type': 'category',
+        ...     'mime_type': 'text/html',
+        ...     'is_redirect': False,
+        ...     'namespace': 'Category',
+        ...     'content': '<h1>Category: Sample Category</h1>\\n<ul>\\n<li><a href=\"/A/Sample_Article\">Sample Article</a></li>\\n</ul>',
+        ...     'size_bytes': 240,
+        ... }
+        True
+        >>> entries[2] == {
+        ...     'id': 3,
+        ...     'path': 'I/sample.png',
+        ...     'title': 'sample.png',
+        ...     'type': 'image',
+        ...     'mime_type': 'image/png',
+        ...     'is_redirect': False,
+        ...     'namespace': 'I',
+        ...     'content': 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==',
+        ...     'size_bytes': 70,
+        ... }
+        True
     """
     zim = Archive(zim_path)
 
@@ -54,7 +97,6 @@ def iter_zim_entries(zim_path: str, max_objects: int = 40):
             print(f'skipping {item.title}')
             continue
 
-        print(f'got {item.title}')
         entry_path = entry.path
 
         entry_type, namespace = get_entry_type_and_namespace(entry_path)
