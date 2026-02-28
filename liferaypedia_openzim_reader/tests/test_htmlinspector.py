@@ -1,9 +1,6 @@
 import unittest
 
-from liferaypedia_openzim_reader.htmlinspector import (
-    get_main_content,
-    is_redirect_by_meta_tag,
-)
+from liferaypedia_openzim_reader.htmlinspector import HtmlInspector
 
 
 class GetMainContentTests(unittest.TestCase):
@@ -16,7 +13,10 @@ class GetMainContentTests(unittest.TestCase):
             </body>
         </html>
         """
-        self.assertEqual(get_main_content(html), "<h1>Title</h1><p>Text</p>")
+        self.assertEqual(
+            HtmlInspector(html).get_main_content(),
+            "<h1>Title</h1><p>Text</p>",
+        )
 
     def test_trims_content(self) -> None:
         html = """
@@ -28,7 +28,11 @@ class GetMainContentTests(unittest.TestCase):
             </body>
         </html>
         """
-        self.assertEqual(get_main_content(html), "<h1>Title</h1><p>Text</p>")
+        self.assertEqual(
+            HtmlInspector(html).get_main_content(),
+            "<h1>Title</h1><p>Text</p>",
+        )
+
 
 class IsRedirectByMetaTagTests(unittest.TestCase):
     def test_meta_refresh_is_redirect(self) -> None:
@@ -40,7 +44,7 @@ class IsRedirectByMetaTagTests(unittest.TestCase):
           </head>
         </html>
         """
-        self.assertTrue(is_redirect_by_meta_tag(html))
+        self.assertTrue(HtmlInspector(html).is_redirect_by_meta_tag())
 
     def test_meta_refresh_is_case_insensitive(self) -> None:
         html = """
@@ -50,7 +54,7 @@ class IsRedirectByMetaTagTests(unittest.TestCase):
           </head>
         </html>
         """
-        self.assertTrue(is_redirect_by_meta_tag(html))
+        self.assertTrue(HtmlInspector(html).is_redirect_by_meta_tag())
 
     def test_no_meta_or_no_content_is_not_redirect(self) -> None:
         html_without_meta = """
@@ -63,12 +67,13 @@ class IsRedirectByMetaTagTests(unittest.TestCase):
         <html><head><meta http-equiv="refresh"></head></html>
         """
 
-        self.assertFalse(is_redirect_by_meta_tag(html_without_meta))
-        self.assertFalse(is_redirect_by_meta_tag(malformed_html))
-        self.assertFalse(is_redirect_by_meta_tag(meta_without_content))
-        self.assertFalse(is_redirect_by_meta_tag(""))
+        self.assertFalse(HtmlInspector(html_without_meta).is_redirect_by_meta_tag())
+        self.assertFalse(HtmlInspector(malformed_html).is_redirect_by_meta_tag())
+        self.assertFalse(
+            HtmlInspector(meta_without_content).is_redirect_by_meta_tag()
+        )
+        self.assertFalse(HtmlInspector("").is_redirect_by_meta_tag())
 
 
 if __name__ == "__main__":  # pragma: no cover
     unittest.main()
-
