@@ -65,7 +65,12 @@ def href_to_category_zim_path(href: str):
     if low.startswith(("#", "javascript:", "mailto:")):
         return None
 
-    base = raw.split("#")[0].split("?")[0]
+    no_frag = raw.split("#", 1)[0]
+    low_nf = no_frag.strip().lower()
+    if low_nf.startswith(("http://", "https://", "//")):
+        base = no_frag
+    else:
+        base = no_frag.split("?", 1)[0]
     base = unquote(base)
     if base.startswith("//"):
         base = "https:" + base
